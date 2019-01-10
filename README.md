@@ -54,6 +54,7 @@ resources:
     source:
       source_url: https://mynexus.example.com/repository/develop
       target_url: https://mynexus.example.com/repository/uat
+      artifact: my.group:my-artifact:jar
       username: myUser
       password: myPass
 jobs:

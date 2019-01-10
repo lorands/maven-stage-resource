@@ -31,7 +31,8 @@ func main() {
 
 	r := regexp.MustCompile("\\/$")
 	srcURL := r.ReplaceAllString(request.Source.Src, "")
-	metaURL := strings.Join([]string{srcURL, adef.GroupID, adef.ArtifactID, "maven-metadata.xml"}, "/")
+	gpath := strings.Replace(adef.GroupID, ".", "/", -1)
+	metaURL := strings.Join([]string{srcURL, gpath, adef.ArtifactID, "maven-metadata.xml"}, "/")
 	tracelog("MetaURL: %v\n", metaURL)
 
 	var client http.Client
@@ -48,6 +49,13 @@ func main() {
 	if err != nil {
 		fatal(fmt.Sprintf("Error response from http. %v\n", resp), err)
 	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+		tracelog("Status code for download: %d\n", resp.StatusCode)
+	} else {
+		fatal(fmt.Sprintf("Fail to download artifact. Status code %s", resp.Status), nil)
+	}
+
 	defer resp.Body.Close()
 
 	var response check.Response
@@ -92,13 +100,13 @@ func fatal(message string, err error) {
 
 func inputRequest(request *check.Request) {
 	if err := json.NewDecoder(os.Stdin).Decode(request); err != nil {
-		log.Fatal("reading request from stdin", err)
+		log.Fatal("[CHK] reading request from stdin", err)
 	}
 }
 
 func outputResponse(response check.Response) {
 	if err := json.NewEncoder(os.Stdout).Encode(response); err != nil {
-		log.Fatal("writing response to stdout", err)
+		log.Fatal("[CHK] writing response to stdout", err)
 	}
 }
 

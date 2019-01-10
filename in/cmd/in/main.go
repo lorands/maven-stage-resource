@@ -17,11 +17,13 @@ import (
 var trace bool
 
 func main() {
-	var request *in.Request
+	var request in.Request
 
 	destinationDir := os.Args[1]
 
-	inputRequest(request)
+	tracelog("===> IN!")
+
+	inputRequest(&request)
 
 	trace = request.Source.Verbose
 
@@ -44,7 +46,7 @@ func main() {
 
 }
 
-func execute(request *in.Request, version string, destinationDir string) {
+func execute(request in.Request, version string, destinationDir string) {
 	adef, err := resource.ArtifactStrToArtifactDef(request.Source.Artifact)
 	if err != nil {
 		fatal("Fail to process artfiact from resource source", err)
@@ -68,7 +70,7 @@ func execute(request *in.Request, version string, destinationDir string) {
 	}
 }
 
-func download(request *in.Request, destDir string, src string, fileName string) {
+func download(request in.Request, destDir string, src string, fileName string) {
 	var client http.Client
 
 	tracelog("To download from url: %s\n", src)
@@ -105,7 +107,7 @@ func download(request *in.Request, destDir string, src string, fileName string) 
 
 }
 
-func upload(request *in.Request, srcDir string, fileName string, dest string) error {
+func upload(request in.Request, srcDir string, fileName string, dest string) error {
 
 	path := filepath.Join(srcDir, fileName)
 	tracelog("Upload file: %s to url: %s", path, dest )
@@ -127,7 +129,7 @@ func upload(request *in.Request, srcDir string, fileName string, dest string) er
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		tracelog("Status code for download: %d\n", resp.StatusCode)
 	} else {
-		fatal(fmt.Sprintf("Fail to download artifact. Status code %s", resp.Status), nil)
+		fatal(fmt.Sprintf("Fail to upload artifact. Status code %s\n", resp.Status), nil)
 	}
 	defer resp.Body.Close()
 
@@ -143,14 +145,18 @@ func fatal(message string, err error) {
 }
 
 func inputRequest(request *in.Request) {
+	//reader := bufio.NewReader(os.Stdin)
+	//text, _ := reader.ReadString('\n')
+	//tracelog("IN: stdin: %s\n", text)
 	if err := json.NewDecoder(os.Stdin).Decode(request); err != nil {
-		log.Fatal("reading request from stdin", err)
+	//if err := json.Unmarshal([]byte(text), request); err != nil {
+		log.Fatal("[IN] reading request from stdin: ", err)
 	}
 }
 
 func outputResponse(response in.Response) {
 	if err := json.NewEncoder(os.Stdout).Encode(response); err != nil {
-		log.Fatal("writing response to stdout", err)
+		log.Fatal("[IN] writing response to stdout: ", err)
 	}
 }
 
