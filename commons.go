@@ -2,9 +2,7 @@ package resource
 
 import (
 	"errors"
-	"io"
-	"net/http"
-	"os"
+	"regexp"
 	"strings"
 )
 
@@ -38,29 +36,27 @@ func ArtifactStrToArtifactDef(artifact string) (ArtifactDef, error) {
 	return def, nil
 }
 
-// DownloadFile will download a url to a local file. It's efficient because it will
-// write as it downloads and not load the whole file into memory.
-func DownloadFile(filepath string, url string) error {
-
-	// Create the file
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
+// GetUrls will create urls to access pom and archive file
+// returns: pomUrl, pomFileName, archiveUrl, archiveFileName
+func GetUrls(src string, adef ArtifactDef, version string) (string, string, string, string) {
+	r := regexp.MustCompile("\\/$") //to cut off last if slash if prsent
+	srcURL := r.ReplaceAllString(src, "")
+	gpath := strings.Replace(adef.GroupID, ".", "/", -1)
+	srcBase := strings.Join([]string{srcURL, gpath, adef.ArtifactID, version}, "/")
+	cordSlice := []string{adef.ArtifactID, version}
+	if len(adef.Classifier) > 0 {
+		cordSlice = append(cordSlice, adef.Classifier)
 	}
-	defer out.Close()
+	fileBaseCords := strings.Join(cordSlice, "-")
+	pomFileName := fileBaseCords + ".pom"
+	srcPom := strings.Join([]string{srcBase, pomFileName}, "/")
+	//tracelog("srcPom: %v\n", srcPom)
 
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+	arFileName := fileBaseCords + "." + adef.AType
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return err
-	}
+	srcArchive := strings.Join([]string{srcBase, arFileName}, "/")
+	//tracelog("srcArchive: %v\n", srcArchive)
 
-	return nil
+	return srcPom, pomFileName, srcArchive, arFileName
 }
+

@@ -1,15 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
-	"regexp"
-	"strings"
-
-	resource "github.com/lorands/maven-stage-resource"
+	"github.com/lorands/maven-stage-resource"
 	"github.com/lorands/maven-stage-resource/in"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
 )
 
 var trace bool
@@ -28,22 +30,7 @@ func main() {
 		fatal("Version is empty!", nil)
 	}
 
-	//do it babe
-	adef, err := resource.ArtifactStrToArtifactDef(request.Source.Artifact)
-	if err != nil {
-		fatal("Fail to process artfiact from resource source", err)
-	}
-
-	srcPom, srcPomFile, srcAr, srcArFile := getUrls(request.Source.Src, adef, version)
-	tPom, _, tAr, _ := getUrls(request.Source.Target, adef, version)
-
-	//donwload to destFolder
-
-	download(destinationDir, srcPom, srcPomFile)
-	download(destinationDir, srcAr, srcArFile)
-
-	upload(destinationDir, srcPomFile, tPom)
-	upload(destinationDir, srcArFile, tAr)
+	execute(request, version, destinationDir)
 
 	//http put to target repo
 
@@ -57,25 +44,97 @@ func main() {
 
 }
 
-func getUrls(src string, adef resource.ArtifactDef, version string) (string, string, string, string) {
-	r := regexp.MustCompile("\\/$")
-	srcURL := r.ReplaceAllString(src, "")
-	srcBase := strings.Join([]string{srcURL, adef.GroupID, adef.ArtifactID, version}, "/")
-	cordSlice := []string{adef.ArtifactID, version}
-	if len(adef.Classifier) > 0 {
-		cordSlice = append(cordSlice, adef.Classifier)
+func execute(request *in.Request, version string, destinationDir string) {
+	adef, err := resource.ArtifactStrToArtifactDef(request.Source.Artifact)
+	if err != nil {
+		fatal("Fail to process artfiact from resource source", err)
 	}
-	fileBaseCords := strings.Join(cordSlice, "-")
-	pomFileName := fileBaseCords + ".pom"
-	srcPom := strings.Join([]string{srcBase, pomFileName}, "/")
-	tracelog("srcPom: %v\n", srcPom)
 
-	arFileName := fileBaseCords + "." + adef.AType
+	if len(request.Params.Version) > 0 {
+		version = request.Params.Version
+	}
 
-	srcArchive := strings.Join([]string{srcBase, arFileName}, "/")
-	tracelog("srcArchive: %v\n", srcArchive)
+	srcPom, srcPomFile, srcAr, srcArFile := resource.GetUrls(request.Source.Src, adef, version)
+	tPom, _, tAr, _ := resource.GetUrls(request.Source.Target, adef, version)
+	//donwload to destFolder
+	download(request, destinationDir, srcPom, srcPomFile)
+	download(request, destinationDir, srcAr, srcArFile)
+	//write version file
+	ioutil.WriteFile(filepath.Join(destinationDir, "version"), []byte(version), 0644)
 
-	return srcPom, pomFileName, srcArchive, arFileName
+	if ! request.Params.DownloadOnly {
+		upload(request, destinationDir, srcPomFile, tPom)
+		upload(request, destinationDir, srcArFile, tAr)
+	}
+}
+
+func download(request *in.Request, destDir string, src string, fileName string) {
+	var client http.Client
+
+	tracelog("To download from url: %s\n", src)
+
+	req, err := http.NewRequest("GET", src, nil)
+	if err != nil {
+		fatal("Fail to create request object for download", err)
+	}
+	if request.Source.Username != "" {
+		tracelog("Setting basic authorization as requested for user: %v\n", request.Source.Username)
+		req.SetBasicAuth(request.Source.Username, request.Source.Password)
+	}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		fatal(fmt.Sprintf("Error response from http. %v\n", resp), err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+		tracelog("Status code for download: %d\n", resp.StatusCode)
+	} else {
+		fatal(fmt.Sprintf("Fail to download artifact. Status code %s", resp.Status), nil)
+	}
+	defer resp.Body.Close()
+
+	out, err := os.Create(filepath.Join(destDir, fileName))
+	defer out.Close()
+
+	n, err := io.Copy(out, resp.Body)
+
+	if err != nil || n < 1 {
+		fatal(fmt.Sprintf("Faild to download file. %v\n", src), err)
+	}
+
+}
+
+func upload(request *in.Request, srcDir string, fileName string, dest string) error {
+
+	path := filepath.Join(srcDir, fileName)
+	tracelog("Upload file: %s to url: %s", path, dest )
+	client := &http.Client{}
+	var reader io.Reader
+
+	file, err := os.Open(path)
+	defer file.Close()
+	reader = bufio.NewReader(file)
+	req, err := http.NewRequest("PUT", dest, reader)
+	if err != nil {
+		return err
+	}
+	if request.Source.Username != "" {
+		tracelog("Setting basic authorization as requested for user: %v\n", request.Source.Username)
+		req.SetBasicAuth(request.Source.Username, request.Source.Password)
+	}
+	resp, err := client.Do(req)
+	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+		tracelog("Status code for download: %d\n", resp.StatusCode)
+	} else {
+		fatal(fmt.Sprintf("Fail to download artifact. Status code %s", resp.Status), nil)
+	}
+	defer resp.Body.Close()
+
+	if err != nil {
+		fatal(fmt.Sprintf("Error response from http. %v\n", resp), err)
+	}
+	return nil
 }
 
 func fatal(message string, err error) {
