@@ -1,0 +1,10 @@
+{
+  "source": {
+    "source_url": "https://repo1.maven.org/maven2",
+    "target_url": "https://boggusogus.com/artifact/",
+    "artifact": "commons-lang:commons-lang:jar",
+    "verbose" : true
+  },
+  "version": { "version": "2.4" }
+}
+
