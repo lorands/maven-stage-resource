@@ -11,7 +11,7 @@ import (
 func TestExecute(t *testing.T) {
 	trace = true
 
-	request := &in.Request {
+	request := in.Request {
 		Source: resource.Source{
 			Artifact: "commons-lang:commons-lang:jar",
 			Src: "https://repo1.maven.org/maven2",

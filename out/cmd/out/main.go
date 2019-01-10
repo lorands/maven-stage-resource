@@ -20,6 +20,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	tracelog("===> OUT!")
+
 	sourceDir := os.Args[1]
 
 	var request out.Request
@@ -51,13 +53,13 @@ func fatal(message string, err error) {
 
 func inputRequest(request *out.Request) {
 	if err := json.NewDecoder(os.Stdin).Decode(request); err != nil {
-		log.Fatal("reading request from stdin", err)
+		log.Fatal("[OUT] reading request from stdin", err)
 	}
 }
 
 func outputResponse(response out.Response) {
 	if err := json.NewEncoder(os.Stdout).Encode(response); err != nil {
-		log.Fatal("writing response to stdout", err)
+		log.Fatal("[OUT] writing response to stdout", err)
 	}
 }
 
