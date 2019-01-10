@@ -29,7 +29,7 @@ func main() {
 
 	trace = request.Source.Verbose
 
-	tracelog("Input directory set.", sourceDir)
+	tracelog("Input directory set. %s\n", sourceDir)
 	tracelog("Request params set: %v\n", request)
 
 	//output to stdout...
