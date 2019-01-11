@@ -68,6 +68,38 @@ func execute(request in.Request, version string, destinationDir string) {
 		upload(request, destinationDir, srcPomFile, tPom)
 		upload(request, destinationDir, srcArFile, tAr)
 	}
+
+	if len(request.Source.PostExecute) > 0 {
+		httpPost(request.Source.PostExecute, request)
+	}
+}
+
+func httpPost(url string, request in.Request) {
+	var client http.Client
+
+	tracelog("To POST against url: %s\n", url)
+
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		fatal("Fail to create request object for download", err)
+	}
+	if request.Source.Username != "" {
+		tracelog("Setting basic authorization as requested for user: %v\n", request.Source.Username)
+		req.SetBasicAuth(request.Source.Username, request.Source.Password)
+	}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		fatal(fmt.Sprintf("Error response from http. %v\n", resp), err)
+	}
+
+	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+		tracelog("Status code for POST: %d\n", resp.StatusCode)
+	} else {
+		fatal(fmt.Sprintf("Fail to POST. Status code %s", resp.Status), nil)
+	}
+	defer resp.Body.Close()
+
 }
 
 func download(request in.Request, destDir string, src string, fileName string) {

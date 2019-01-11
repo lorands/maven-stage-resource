@@ -14,8 +14,10 @@ it *will* upload it to target repository.
 * `source_url`: *Required*. The source maven repository location.
 * `target_url`: *Required*. The target maven repository location.
 * `artifact`: *Required*. The artifact coordinates in the form of groupId:artifactId:type\[:classifier\]
-* `username`: *Optional* The username used to authenticate.
+* `username`: *Optional*. The username used to authenticate.
 * `password`: *Optional*. The password used to authenticate.
+* `post_execute` *Optional*. If defined, will issue a HTTP POST against the url provided. - Usually 
+execute a task against Nexus to update maven-metadata.xml with a dedicated task.
 * `verbose`: *Optional*. True to write intensive log.
 
 ## Check: Check if there is new version in source repository
@@ -57,6 +59,7 @@ resources:
       artifact: my.group:my-artifact:jar
       username: myUser
       password: myPass
+      post_execute: https://mynexus.example.com/service/rest/v1/tasks/f0b14f9d-8e68-4a50-8a90-d07a61245ceb5/run
 jobs:
   - name: merge-dev-to-uat
     plan:
