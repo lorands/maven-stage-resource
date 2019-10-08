@@ -1,0 +1,6 @@
+fileignoreconfig:
+- filename: assets/mvnw
+  checksum: db80137ca3ccc11751b563570e8c1cdd2a840101a81bb138ee59017190fa0977
+  ignore_detectors: []
+scopeconfig: []
+

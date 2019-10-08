@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/lorands/maven-stage-resource"
 	"github.com/lorands/maven-stage-resource/in"
 	"io/ioutil"
+	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -17,11 +20,11 @@ func TestExecute(t *testing.T) {
 			Src: "https://repo1.maven.org/maven2",
 			Target: "https://boggusogus.com/artifact/",
 			Verbose: true,
-			//Username: "",
-			//Password: "",
+			Username: "",
+			Password: "",
 		},
 		Version: resource.Version{
-			Version: "2.4",
+			Version: "4.0.7",
 		},
 		Params: in.Params {
 			Version: "",
@@ -29,11 +32,19 @@ func TestExecute(t *testing.T) {
 		},
 	}
 
-	version := "2.5"
+	version := "4.0.7"
 
 	destDir, _ := ioutil.TempDir( "","maven-stage")
 
-	execute(request, version, destDir)
+	_, filename, _, _ := runtime.Caller(0)
+	testDir, _ := filepath.Abs(filepath.Dir(filename))
+	resourceDir = filepath.Join(testDir, "../../../assets")
+
+	fmt.Println(resourceDir)
+
+	if err := execute(request, version, destDir, resourceDir); err != nil {
+		t.Errorf("Fail to execute. %v", err)
+	}
 
 	//check if files are there...
 	files, _ := ioutil.ReadDir(destDir)
@@ -44,9 +55,9 @@ func TestExecute(t *testing.T) {
 
 	cntr := 0
 	for _, file := range files {
-		if file.Name() == "commons-lang-2.5.jar" {
+		if file.Name() == "kingfisher-alert-4.0.7.jar" {
 			cntr++
-		} else if file.Name() == "commons-lang-2.5.pom" {
+		} else if file.Name() == "kingfisher-alert-4.0.7.pom" {
 				cntr++
 		} else if file.Name() == "version" {
 					cntr++
