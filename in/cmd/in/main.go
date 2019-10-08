@@ -42,9 +42,9 @@ func main() {
 		fatal("Version is empty!", nil)
 	}
 
-	execute(request, version, destinationDir, resourceDir)
-
-	//http put to target repo
+	if err := execute(request, version, destinationDir, resourceDir); err != nil {
+		fatal("Fail to process.", err)
+	}
 
 	response := in.Response{
 		Version: resource.Version{
