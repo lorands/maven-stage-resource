@@ -3,6 +3,7 @@ FROM golang:alpine as builder
 RUN mkdir -p /assets
 WORKDIR /assets
 COPY . /go/src/github.com/lorands/maven-stage-resource
+COPY ./assets /assets
 ENV CGO_ENABLED 0
 RUN go build -o /assets/in github.com/lorands/maven-stage-resource/in/cmd/in
 RUN go build -o /assets/out github.com/lorands/maven-stage-resource/out/cmd/out
@@ -12,7 +13,7 @@ RUN set -e; for pkg in $(go list ./... | grep -v "acceptance"); do \
 		go test -o "/tests/$(basename $pkg).test" -c $pkg; \
 	done
 
-FROM alpine:edge AS resource
+FROM openjdk:8u151-jdk-alpine AS resource
 RUN apk add --no-cache bash tzdata ca-certificates
 COPY --from=builder assets/ /opt/resource/
 RUN chmod +x /opt/resource/*

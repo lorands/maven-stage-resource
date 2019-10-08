@@ -26,7 +26,7 @@ Checks for new versions of the artifact by retrieving the maven-metadata.xml fro
 
 ## Get (in): Download the artifact and deploy it to target repository
 
-Download the source artifact from repositry and puts it to target. 
+Download the source artifact from repository and puts it to target. 
 It will create the following files in the target directory:
 
 - pom file
