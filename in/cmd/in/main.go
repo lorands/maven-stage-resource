@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -37,10 +38,17 @@ func main() {
 
 	trace = request.Source.Verbose
 
-	version := request.Version.Version
-	if len(version) < 0 {
-		fatal("Version is empty!", nil)
+	var version string
+	if len(request.Params.Version) > 0 {
+		version = request.Params.Version
+	} else {
+		version = request.Version.Version
+		if len(version) < 0 {
+			fatal("Version is empty!", nil)
+		}
 	}
+
+	version = readIfFile(version)
 
 	if err := execute(request, version, destinationDir, resourceDir); err != nil {
 		fatal("Fail to process.", err)
@@ -56,15 +64,27 @@ func main() {
 
 }
 
+func readIfFile(version string) string {
+	file, err := os.Open(version)
+	if err != nil {
+		return version
+	}
+	defer file.Close()
+	reader := bufio.NewReader(file)
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return version
+	}
+	return line
+}
+
 func execute(request in.Request, version string, destinationDir string, resourceDir string) error {
 	adef, err := resource.ArtifactStrToArtifactDef(request.Source.Artifact)
 	if err != nil {
 		fatal("Fail to process artfiact from resource source", err)
 	}
 
-	if len(request.Params.Version) > 0 {
-		version = request.Params.Version
-	}
+
 
 	srcPom, srcPomFile, srcAr, srcArFile := resource.GetUrls(request.Source.Src, adef, version)
 	//tPom, _, tAr, _ := resource.GetUrls(request.Source.Target, adef, version)

@@ -33,7 +33,8 @@ It will create the following files in the target directory:
 
 Parameters:
 
-* `version`: *Optional* Make ability to provide version instead of getting the latest.
+* `version`: *Optional* Make ability to provide version instead of getting the latest. 
+If the version is a file, the version will be read from the file.
 * `download_only`: *Optional* If true will only download, and will not upload. Defaults to `false`.
 
 ## Put (out): Nothing.
